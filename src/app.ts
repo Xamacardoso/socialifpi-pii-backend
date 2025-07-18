@@ -1,9 +1,8 @@
 import express, { NextFunction, Request, Response } from 'express';
-import { RepositorioDePostagens } from './RepositorioDePostagens';
-import { Postagem } from './Postagem';
+import { RepositorioDePostagens } from './repository/RepositorioDePostagens';
+import { Postagem } from './model/Postagem';
 import cors from 'cors';
-
-
+import connectDB from './config/database';
 
 const app = express();
 const repositorio = new RepositorioDePostagens();
@@ -94,8 +93,9 @@ app.post(PATH_CURTIR, (req: Request, res: Response) => {
 
 // Inicializar o servidor na porta 3000
 const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
+app.listen(PORT, async () => {
+    await connectDB();
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
 
 

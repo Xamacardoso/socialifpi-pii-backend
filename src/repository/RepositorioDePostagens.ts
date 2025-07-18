@@ -1,4 +1,4 @@
-import { Postagem } from './Postagem';
+import { Postagem } from '../model/Postagem';
 
 export class RepositorioDePostagens {
     private postagens: Postagem[] = [];

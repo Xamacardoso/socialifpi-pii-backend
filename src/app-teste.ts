@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from 'express';
-import { Postagem } from './Postagem';
+import { Postagem } from './model/Postagem';
 
 const app = express();
 app.use(express.json());
