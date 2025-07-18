@@ -1,66 +1,111 @@
 import { Postagem } from '../model/Postagem';
+import { Comentario } from '../model/Comentario';
+import mongoose, { Schema, Document, Model } from 'mongoose';
+
+// Interface do documento de comentario (Para o Mongoose)
+interface IComentario extends Document {
+    conteudo: string;
+    data: Date;
+}
+
+// Definição do schema de comentario
+const ComentarioSchema: Schema = new Schema({
+    conteudo: { type: String, required: true },
+    data: { type: Date, required: true, default: Date.now }
+});
+
+// Interface para a postagem (Para o Mongoose)
+interface IPostagem extends Document {
+    titulo: string;
+    conteudo: string;
+    data: Date;
+    curtidas: number;
+    comentarios: IComentario[];
+}
+
+const PostagemSchema: Schema = new Schema({
+    titulo: { type: String, required: true },
+    conteudo: { type: String, required: true },
+    data: { type: Date, required: true, default: Date.now },
+    curtidas: { type: Number, default: 0 },
+    comentarios: [ComentarioSchema]
+});
+
+// Criar o modelo do Mongoose para Postagem
+const PostagemModel: Model<IPostagem> = mongoose.model<IPostagem>('Postagem', PostagemSchema);
 
 export class RepositorioDePostagens {
-    private postagens: Postagem[] = [];
-    private nextId: number = 1;
-
     // Método para incluir uma nova postagem
-    public incluir(postagem: Postagem): Postagem {
-        postagem['id'] = this.nextId++;
-        this.postagens.push(postagem);
-        return postagem;
+    public async incluir(postagem: Postagem): Promise<IPostagem> {
+        const novaPostagem = new PostagemModel({
+            titulo: postagem.getTitulo(),
+            conteudo: postagem.getConteudo(),
+            data: postagem.getData(),
+            curtidas: postagem.getCurtidas(),
+            comentarios: postagem.getComentarios()
+        });
+        return await novaPostagem.save();
     }
 
     // Método para alterar uma postagem existente
-    public alterar(id: number, titulo: string, conteudo: string, data: Date, curtidas: number) : boolean {
-        const postagem = this.consultar(id);
-        if (postagem) {
-            postagem['titulo'] = titulo;
-            postagem['conteudo'] = conteudo;
-            postagem['data'] = data;
-            postagem['curtidas'] = curtidas;
-            return true;
-        }
-        return false;
+    public async alterar(id: string, titulo: string, conteudo: string): Promise<IPostagem | null> {
+        return await PostagemModel.findByIdAndUpdate(id, { titulo, conteudo }, { new: true });
     }
 
     // Método para consultar uma postagem pelo ID
-    public consultar(id: number): Postagem | undefined {
-        return this.postagens.find(postagem => postagem.getId() == id);
+    public async consultar(id: string): Promise<IPostagem | null> {
+        return await PostagemModel.findById(id);
     }
 
     // Método para excluir uma postagem pelo ID
-    public excluir(id: number): boolean {
-        const index = this.postagens.findIndex(postagem => postagem.getId() == id);
-        if (index != -1) {
-            this.postagens.splice(index, 1);
-            return true;
-        }
-        return false;
+    public async excluir(id: string): Promise<IPostagem | null> {
+        return await PostagemModel.findByIdAndDelete(id);
     }
 
     // Método para curtir uma postagem pelo ID
-    public curtir(id: number): number | null {
-        const postagem = this.consultar(id);
-        if (postagem) {
-            postagem['curtidas'] = postagem.getCurtidas() + 1;
-            return postagem.getCurtidas();
-        }
-        return null;
+    public async curtir(id: string): Promise<IPostagem | null> {
+        return await PostagemModel.findByIdAndUpdate(id, { $inc: { curtidas: 1 } }, { new: true });
     }
 
-    // Método para gerar uma data aleatória dentro de um intervalo de anos
-    private gerarDataAleatoria(anosPassados: number = 5): Date {
-        const hoje = new Date();
-        const anoInicial = hoje.getFullYear() - anosPassados;
-        const anoAleatorio = Math.floor(Math.random() * (hoje.getFullYear() - anoInicial)) + anoInicial;
-        const mesAleatorio = Math.floor(Math.random() * 12);
-        const diaAleatorio = Math.floor(Math.random() * 28) + 1; // Considerando 28 dias para evitar problemas com fevereiro
-        return new Date(anoAleatorio, mesAleatorio, diaAleatorio);
+    // Método para adicionar um comentário a uma postagem
+    public async adicionarComentario(id: string, comentario: Comentario): Promise<IPostagem | null> {
+        const novoComentario = {
+            _id: new mongoose.Types.ObjectId(), // Garante um novo ID
+            conteudo: comentario.getConteudo(),
+            data: comentario.getData()
+        };
+        return await PostagemModel.findByIdAndUpdate(
+            id,
+            { $push: { comentarios: novoComentario } },
+            { new: true }
+        );
     }
 
-    // Método para povoar o array com instâncias de Postagem com datas aleatórias e conteúdos mais longos
+    // método para excluir um comentário de uma postagem
+    public async excluirComentario(postId: string, comentarioId: string): Promise<IPostagem | null> {
+        return await PostagemModel.findByIdAndUpdate(
+            postId,
+            { $pull: { comentarios: { _id: comentarioId } } },
+            { new: true }
+        );
+    }
+
+    // Método para listar todas as postagens
+    public async listar(): Promise<IPostagem[]> {
+        return await PostagemModel.find().sort({ data: -1 });
+    }
+
+    // Corrigido: método gerarDataAleatoria não existe, então vamos criar uma função local para gerar datas aleatórias
     public povoar(): void {
+        function gerarDataAleatoria(): Date {
+            // Gera uma data aleatória nos últimos 365 dias
+            const hoje = new Date();
+            const diasAtras = Math.floor(Math.random() * 365);
+            const dataAleatoria = new Date(hoje);
+            dataAleatoria.setDate(hoje.getDate() - diasAtras);
+            return dataAleatoria;
+        }
+
         this.incluir(new Postagem(
             1,
             'A Importância da Educação',
@@ -68,7 +113,7 @@ export class RepositorioDePostagens {
             'Ela promove o desenvolvimento individual e coletivo, ' +
             'permitindo que pessoas realizem seu potencial. ' +
             'Investir em educação é investir no futuro de todos nós.',
-            this.gerarDataAleatoria(),
+            gerarDataAleatoria(),
             10
         ));
         this.incluir(new Postagem(
@@ -78,7 +123,7 @@ export class RepositorioDePostagens {
             'Inovações constantes estão mudando a forma como vivemos, trabalhamos e nos comunicamos. ' +
             'É essencial acompanhar essas mudanças para não ficarmos para trás. ' +
             'A tecnologia tem o poder de transformar o mundo em que vivemos.',
-            this.gerarDataAleatoria(),
+            gerarDataAleatoria(),
             15
         ));
         this.incluir(new Postagem(
@@ -88,7 +133,7 @@ export class RepositorioDePostagens {
             'Cada ação nossa tem um impacto, e precisamos ser conscientes das nossas escolhas. ' +
             'A sustentabilidade não é uma opção, mas uma necessidade urgente. ' +
             'Devemos agir agora para garantir um planeta habitável no futuro.',
-            this.gerarDataAleatoria(),
+            gerarDataAleatoria(),
             20
         ));
         this.incluir(new Postagem(
@@ -98,7 +143,7 @@ export class RepositorioDePostagens {
             'O cuidado com a saúde deve ser uma prioridade diária. ' +
             'Pequenos hábitos saudáveis podem fazer uma grande diferença a longo prazo. ' +
             'Não negligencie seu bem-estar, ele é a chave para uma vida plena.',
-            this.gerarDataAleatoria(),
+            gerarDataAleatoria(),
             8
         ));
         this.incluir(new Postagem(
@@ -108,7 +153,7 @@ export class RepositorioDePostagens {
             'Empresas que não se adaptam a essa nova realidade correm o risco de ficar obsoletas. ' +
             'A digitalização não é apenas uma tendência, mas uma necessidade para a sobrevivência no mercado. ' +
             'O futuro é digital, e devemos nos preparar para ele.',
-            this.gerarDataAleatoria(),
+            gerarDataAleatoria(),
             12
         ));
         this.incluir(new Postagem(
@@ -118,7 +163,7 @@ export class RepositorioDePostagens {
             'Elas conectam pessoas em todo o mundo, criando novas formas de interação. ' +
             'No entanto, também trazem desafios, como a disseminação de informações falsas. ' +
             'É crucial usar essas ferramentas de forma responsável e consciente.',
-            this.gerarDataAleatoria(),
+            gerarDataAleatoria(),
             7
         ));
         this.incluir(new Postagem(
@@ -128,7 +173,7 @@ export class RepositorioDePostagens {
             'O crescimento populacional exige novas abordagens para o transporte urbano. ' +
             'A integração de tecnologia no transporte pode melhorar a qualidade de vida nas cidades. ' +
             'Investir em mobilidade sustentável é essencial para um futuro melhor.',
-            this.gerarDataAleatoria(),
+            gerarDataAleatoria(),
             9
         ));
         this.incluir(new Postagem(
@@ -138,7 +183,7 @@ export class RepositorioDePostagens {
             'A educação financeira deve começar desde cedo, para evitar problemas no futuro. ' +
             'Entender como o dinheiro funciona é o primeiro passo para uma vida financeira saudável. ' +
             'Planejamento e controle são as chaves para o sucesso financeiro.',
-            this.gerarDataAleatoria(),
+            gerarDataAleatoria(),
             5
         ));
         this.incluir(new Postagem(
@@ -148,7 +193,7 @@ export class RepositorioDePostagens {
             'Os alimentos que consumimos impactam diretamente nossa saúde e bem-estar. ' +
             'Fazer escolhas alimentares conscientes pode prevenir doenças e melhorar a qualidade de vida. ' +
             'Invista em uma alimentação rica em nutrientes e pobre em alimentos processados.',
-            this.gerarDataAleatoria(),
+            gerarDataAleatoria(),
             11
         )); 
         this.incluir(new Postagem(
@@ -158,13 +203,9 @@ export class RepositorioDePostagens {
             'Inovações como a telemedicina estão tornando o atendimento mais acessível. ' +
             'A pesquisa e o desenvolvimento em saúde estão em um ritmo acelerado, trazendo esperança para muitas doenças. ' +
             'O futuro da saúde está cada vez mais integrado com a tecnologia.',
-            this.gerarDataAleatoria(),
+            gerarDataAleatoria(),
             13
         ));
     }
 
-    // Método para listar todas as postagens
-    public listar(): Postagem[] {
-        return this.postagens.sort((a, b) => new Date(b.getData()).getTime() - new Date(a.getData()).getTime());
-    }
 }

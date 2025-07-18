@@ -1,9 +1,12 @@
+import { Comentario } from "./Comentario";
+
 export class Postagem {
     private id: number;
     private titulo: string;
     private conteudo: string;
     private data: Date;
     private curtidas: number;
+    private comentarios: Comentario[] = [];
 
     constructor(id: number, titulo: string, conteudo: string, data: Date, curtidas: number) {
         this.id = id;
@@ -31,5 +34,13 @@ export class Postagem {
 
     public getCurtidas(): number {
         return this.curtidas;
+    }
+
+    public getComentarios(): Comentario[] {
+        return this.comentarios;
+    }
+    
+    public adicionarComentario(comentario: Comentario): void {
+        this.comentarios.push(comentario);
     }
 }

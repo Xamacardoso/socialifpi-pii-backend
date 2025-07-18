@@ -1,5 +1,6 @@
 import express, { NextFunction, Request, Response } from 'express';
 import { RepositorioDePostagens } from './repository/RepositorioDePostagens';
+import { Comentario } from './model/Comentario';
 import { Postagem } from './model/Postagem';
 import cors from 'cors';
 import connectDB from './config/database';
@@ -14,82 +15,98 @@ app.use(express.json());
 app.use(cors());
 
 // Povoar o repositório com postagens iniciais
-repositorio.povoar();
+repositorio.listar().then(postagens => {
+    if (postagens.length === 0) {
+        console.log('Povoando o repositório com postagens iniciais...');
+        repositorio.povoar();
+    }
+});
 
 // Endpoint para raiz
 const PATH: string = '/socialifpi/postagem';
 const PATH_ID: string = PATH + '/:id';
 const PATH_CURTIR = PATH_ID + '/curtir';
+const PATH_COMENTARIO = PATH_ID + '/comentario';
+const PATH_COMENTARIO_ID = PATH_COMENTARIO + '/:comentarioId';
 
 
 // Endpoint para listar todas as postagens
 app.get(PATH, (req: Request, res: Response) => {
-    const postagens = repositorio.listar();
-    res.json(postagens);
+    try {
+        const postagens = repositorio.listar();
+        res.json(postagens);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao listar postagens'});
+    }
 });
 
 // Endpoint para consultar uma postagem pelo ID
-app.get(PATH_ID, (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-    const postagem = repositorio.consultar(id);
-    
-    if (!postagem) {
-        res.status(404).json({ message: 'Postagem não encontrada' });
-        return;
-        
-    } 
-
-    res.json(postagem);
+app.get(PATH_ID, async (req: Request, res: Response) => {
+    try {
+        const postagem = await repositorio.consultar(req.params.id);
+        if (!postagem) {
+            return res.status(404).json({ message: 'Postagem não encontrada' });
+        }
+        res.json(postagem);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao consultar postagem' });
+    }
 });
 
 // Endpoint para incluir uma nova postagem
-app.post(PATH, (req: Request, res: Response) => {
-    const { titulo, conteudo, data, curtidas } = req.body;
-    const novaPostagem = new Postagem(0, titulo, conteudo, new Date(data), curtidas || 0);
-    const postagemIncluida = repositorio.incluir(novaPostagem);
-    res.status(201).json(postagemIncluida);
-});
-
-// Endpoint para alterar uma postagem existente
-app.put(PATH_ID, (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-    const { titulo, conteudo, data, curtidas } = req.body;
-    
-    const sucesso = repositorio.alterar(id, titulo, conteudo, data, curtidas);
-    if (!sucesso) {
-        res.status(404).json({ message: 'Postagem não encontrada' });
-        return;
+app.post(PATH, async (req: Request, res: Response) => {
+    try {
+        const { titulo, conteudo } = req.body;
+        const novaPostagem = new Postagem(0, titulo, conteudo, new Date(), 0);
+        const postagemIncluida = await repositorio.incluir(novaPostagem);
+        res.status(201).json(postagemIncluida);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao incluir postagem' });
     }
-
-    res.status(200).json({ message: 'Postagem alterada com sucesso' });
 });
 
 // Endpoint para excluir uma postagem pelo ID
-app.delete(PATH_ID, (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-    const sucesso = repositorio.excluir(id);
-    if (!sucesso) {
-        res.status(404).json({ message: 'Postagem não encontrada' });
-        return;
+app.delete(PATH_ID, async (req: Request, res: Response) => {
+    try {
+        const postagemExcluida = await repositorio.excluir(req.params.id);
+        if (!postagemExcluida) {
+            return res.status(404).json({ message: 'Postagem não encontrada' });
+        }
+        res.json({ message: 'Postagem excluída com sucesso' });
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao excluir postagem' });
     }
-
-    res.status(200).json({ message: 'Postagem excluída com sucesso' });
 });
 
 // Endpoint para curtir uma postagem pelo ID
-// Endpoint para curtir uma postagem pelo ID e retornar a quantidade de curtidas
-app.post(PATH_CURTIR, (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-    const curtidas = repositorio.curtir(id);
-    
-    if (curtidas == null) {
-        res.status(404).json({ message: 'Postagem não encontrada' });
-        return;
-        
-    } 
-    
-    res.json({ message: 'Postagem curtida com sucesso', curtidas });
+app.post(PATH_CURTIR, async (req: Request, res: Response) => {
+    try {
+        const postagemCurtida = await repositorio.curtir(req.params.id);
+        if (!postagemCurtida) {
+            return res.status(404).json({ message: 'Postagem não encontrada' });
+        }
+        res.json(postagemCurtida);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao curtir postagem' });
+    }
 });
+
+// Endpoint para adicionar um comentário
+app.post(PATH_COMENTARIO, async (req: Request, res: Response) => {
+    try {
+        const { autor, conteudo } = req.body;
+        // Passamos um ID vazio, pois o repositório/banco irá gerar um
+        const novoComentario = new Comentario('', conteudo, new Date()); 
+        const postagemAtualizada = await repositorio.adicionarComentario(req.params.id, novoComentario);
+        if (!postagemAtualizada) {
+            return res.status(404).json({ message: 'Postagem não encontrada' });
+        }
+        res.json(postagemAtualizada);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao adicionar comentário' });
+    }
+});
+
 
 // Inicializar o servidor na porta 3000
 const PORT = 3000;
