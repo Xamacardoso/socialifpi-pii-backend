@@ -115,6 +115,21 @@ app.post(PATH_COMENTARIO, async (req: Request, res: Response) => {
     }
 });
 
+// Endpoint para remover um comentário
+app.delete(PATH_COMENTARIO_ID, async (req: Request, res: Response) => {
+    try {
+        const { id, comentarioId } = req.params;
+        const postagemAtualizada = await repositorio.excluirComentario(id, comentarioId);
+        
+        if (!postagemAtualizada) {
+            return res.status(404).json({ message: 'Postagem ou comentário não encontrado' });
+        }
+        res.json(postagemAtualizada);
+
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao remover comentário' });
+    }
+});
 
 // Inicializar o servidor na porta 3000
 const PORT = 3000;
