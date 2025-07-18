@@ -94,14 +94,22 @@ app.post(PATH_CURTIR, async (req: Request, res: Response) => {
 // Endpoint para adicionar um comentário
 app.post(PATH_COMENTARIO, async (req: Request, res: Response) => {
     try {
+        // Extrair 'autor' e 'conteudo' do corpo da requisição
         const { autor, conteudo } = req.body;
-        // Passamos um ID vazio, pois o repositório/banco irá gerar um
-        const novoComentario = new Comentario('', conteudo, new Date()); 
+
+        // Validação simples para garantir que os dados foram enviados
+        if (!autor || !conteudo) {
+            return res.status(400).json({ message: 'Autor e conteúdo são obrigatórios.' });
+        }
+
+        const novoComentario = new Comentario('', autor, conteudo, new Date());
         const postagemAtualizada = await repositorio.adicionarComentario(req.params.id, novoComentario);
+        
         if (!postagemAtualizada) {
             return res.status(404).json({ message: 'Postagem não encontrada' });
         }
         res.json(postagemAtualizada);
+
     } catch (error) {
         res.status(500).json({ message: 'Erro ao adicionar comentário' });
     }

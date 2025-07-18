@@ -11,6 +11,7 @@ interface IComentario extends Document {
 // Definição do schema de comentario
 const ComentarioSchema: Schema = new Schema({
     conteudo: { type: String, required: true },
+    autor: { type: String, required: true },
     data: { type: Date, required: true, default: Date.now }
 });
 
@@ -71,6 +72,7 @@ export class RepositorioDePostagens {
     public async adicionarComentario(id: string, comentario: Comentario): Promise<IPostagem | null> {
         const novoComentario = {
             _id: new mongoose.Types.ObjectId(), // Garante um novo ID
+            autor: comentario.getAutor(),
             conteudo: comentario.getConteudo(),
             data: comentario.getData()
         };
