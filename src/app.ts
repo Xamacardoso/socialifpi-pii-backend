@@ -31,9 +31,9 @@ const PATH_COMENTARIO_ID = PATH_COMENTARIO + '/:comentarioId';
 
 
 // Endpoint para listar todas as postagens
-app.get(PATH, (req: Request, res: Response) => {
+app.get(PATH, async (req: Request, res: Response) => {
     try {
-        const postagens = repositorio.listar();
+        const postagens = await repositorio.listar();
         res.json(postagens);
     } catch (error) {
         res.status(500).json({ message: 'Erro ao listar postagens'});

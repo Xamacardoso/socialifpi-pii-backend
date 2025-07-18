@@ -96,7 +96,7 @@ export class RepositorioDePostagens {
     }
 
     // Corrigido: método gerarDataAleatoria não existe, então vamos criar uma função local para gerar datas aleatórias
-    public povoar(): void {
+    public async povoar(): Promise<void> {
         function gerarDataAleatoria(): Date {
             // Gera uma data aleatória nos últimos 365 dias
             const hoje = new Date();
@@ -106,106 +106,90 @@ export class RepositorioDePostagens {
             return dataAleatoria;
         }
 
-        this.incluir(new Postagem(
-            1,
-            'A Importância da Educação',
-            'A educação é a base para uma sociedade mais justa e equitativa. ' +
-            'Ela promove o desenvolvimento individual e coletivo, ' +
-            'permitindo que pessoas realizem seu potencial. ' +
-            'Investir em educação é investir no futuro de todos nós.',
-            gerarDataAleatoria(),
-            10
-        ));
-        this.incluir(new Postagem(
-            2,
-            'Tecnologia e Inovação',
-            'Vivemos em uma era onde a tecnologia avança a passos largos. ' +
-            'Inovações constantes estão mudando a forma como vivemos, trabalhamos e nos comunicamos. ' +
-            'É essencial acompanhar essas mudanças para não ficarmos para trás. ' +
-            'A tecnologia tem o poder de transformar o mundo em que vivemos.',
-            gerarDataAleatoria(),
-            15
-        ));
-        this.incluir(new Postagem(
-            3,
-            'Sustentabilidade Ambiental',
-            'Preservar o meio ambiente é crucial para o futuro das próximas gerações. ' +
-            'Cada ação nossa tem um impacto, e precisamos ser conscientes das nossas escolhas. ' +
-            'A sustentabilidade não é uma opção, mas uma necessidade urgente. ' +
-            'Devemos agir agora para garantir um planeta habitável no futuro.',
-            gerarDataAleatoria(),
-            20
-        ));
-        this.incluir(new Postagem(
-            4,
-            'Saúde e Bem-Estar',
-            'Manter o bem-estar físico e mental é essencial para uma vida equilibrada. ' +
-            'O cuidado com a saúde deve ser uma prioridade diária. ' +
-            'Pequenos hábitos saudáveis podem fazer uma grande diferença a longo prazo. ' +
-            'Não negligencie seu bem-estar, ele é a chave para uma vida plena.',
-            gerarDataAleatoria(),
-            8
-        ));
-        this.incluir(new Postagem(
-            5,
-            'Economia Digital',
-            'A transformação digital está mudando a maneira como fazemos negócios. ' +
-            'Empresas que não se adaptam a essa nova realidade correm o risco de ficar obsoletas. ' +
-            'A digitalização não é apenas uma tendência, mas uma necessidade para a sobrevivência no mercado. ' +
-            'O futuro é digital, e devemos nos preparar para ele.',
-            gerarDataAleatoria(),
-            12
-        ));
-        this.incluir(new Postagem(
-            6,
-            'Impacto das Redes Sociais',
-            'As redes sociais têm um papel central na comunicação moderna. ' +
-            'Elas conectam pessoas em todo o mundo, criando novas formas de interação. ' +
-            'No entanto, também trazem desafios, como a disseminação de informações falsas. ' +
-            'É crucial usar essas ferramentas de forma responsável e consciente.',
-            gerarDataAleatoria(),
-            7
-        ));
-        this.incluir(new Postagem(
-            7,
-            'Mobilidade Urbana',
-            'Soluções de mobilidade inteligente são o futuro das grandes cidades. ' +
-            'O crescimento populacional exige novas abordagens para o transporte urbano. ' +
-            'A integração de tecnologia no transporte pode melhorar a qualidade de vida nas cidades. ' +
-            'Investir em mobilidade sustentável é essencial para um futuro melhor.',
-            gerarDataAleatoria(),
-            9
-        ));
-        this.incluir(new Postagem(
-            8,
-            'Educação Financeira',
-            'Gerir as finanças pessoais é fundamental para a estabilidade econômica. ' +
-            'A educação financeira deve começar desde cedo, para evitar problemas no futuro. ' +
-            'Entender como o dinheiro funciona é o primeiro passo para uma vida financeira saudável. ' +
-            'Planejamento e controle são as chaves para o sucesso financeiro.',
-            gerarDataAleatoria(),
-            5
-        ));
-        this.incluir(new Postagem(
-            9,
-            'Alimentação Saudável',
-            'Uma dieta equilibrada é essencial para manter corpo e mente saudáveis. ' +
-            'Os alimentos que consumimos impactam diretamente nossa saúde e bem-estar. ' +
-            'Fazer escolhas alimentares conscientes pode prevenir doenças e melhorar a qualidade de vida. ' +
-            'Invista em uma alimentação rica em nutrientes e pobre em alimentos processados.',
-            gerarDataAleatoria(),
-            11
-        )); 
-        this.incluir(new Postagem(
-            10,
-            'Inovações na Saúde',
-            'A tecnologia está revolucionando o setor de saúde com novos tratamentos. ' +
-            'Inovações como a telemedicina estão tornando o atendimento mais acessível. ' +
-            'A pesquisa e o desenvolvimento em saúde estão em um ritmo acelerado, trazendo esperança para muitas doenças. ' +
-            'O futuro da saúde está cada vez mais integrado com a tecnologia.',
-            gerarDataAleatoria(),
-            13
-        ));
+        console.log('[POVOAMENTO] Limpando base de dados...');
+        await PostagemModel.deleteMany({});
+
+        console.log('[POVOAMENTO] Inserindo postagens iniciais...');
+        
+        // Criação de postagens iniciais com conteúdo variado
+        const postagensIniciais: Postagem[] = [
+            new Postagem(
+                1,
+                'A Importância da Educação',
+                'A educação é a base para uma sociedade mais justa e equitativa. ' +
+                'Ela promove o desenvolvimento individual e coletivo, ' +
+                'permitindo que pessoas realizem seu potencial. ' +
+                'Investir em educação é investir no futuro de todos nós.',
+                gerarDataAleatoria(),
+                10
+            ),
+            new Postagem(
+                2,
+                'Tecnologia e Inovação',
+                'Vivemos em uma era onde a tecnologia avança a passos largos. ' +
+                'Inovações constantes estão mudando a forma como vivemos, trabalhamos e nos comunicamos. ' +
+                'É essencial acompanhar essas mudanças para não ficarmos para trás. ' +
+                'A tecnologia tem o poder de transformar o mundo em que vivemos.',
+                gerarDataAleatoria(),
+                15
+            ),
+            new Postagem(
+                3,
+                'Sustentabilidade Ambiental',
+                'Preservar o meio ambiente é crucial para o futuro das próximas gerações. ' +
+                'Cada ação nossa tem um impacto, e precisamos ser conscientes das nossas escolhas. ' +
+                'A sustentabilidade não é uma opção, mas uma necessidade urgente. ' +
+                'Devemos agir agora para garantir um planeta habitável no futuro.',
+                gerarDataAleatoria(),
+                20
+            ),
+            new Postagem(
+                4,
+                'Saúde e Bem-Estar',
+                'Manter o bem-estar físico e mental é essencial para uma vida equilibrada. ' +
+                'O cuidado com a saúde deve ser uma prioridade diária. ' +
+                'Pequenos hábitos saudáveis podem fazer uma grande diferença a longo prazo. ' +
+                'Não negligencie seu bem-estar, ele é a chave para uma vida plena.',
+                gerarDataAleatoria(),
+                8
+            ),    
+            new Postagem(
+                5,
+                'Economia Digital',
+                'A transformação digital está mudando a maneira como fazemos negócios. ' +
+                'Empresas que não se adaptam a essa nova realidade correm o risco de ficar obsoletas. ' +
+                'A digitalização não é apenas uma tendência, mas uma necessidade para a sobrevivência no mercado. ' +
+                'O futuro é digital, e devemos nos preparar para ele.',
+                gerarDataAleatoria(),
+                12
+            ),
+            new Postagem(
+                6,
+                'Impacto das Redes Sociais',
+                'As redes sociais têm um papel central na comunicação moderna. ' +
+                'Elas conectam pessoas em todo o mundo, criando novas formas de interação. ' +
+                'No entanto, também trazem desafios, como a disseminação de informações falsas. ' +
+                'É crucial usar essas ferramentas de forma responsável e consciente.',
+                gerarDataAleatoria(),
+                7
+            ),
+            new Postagem(
+                7,
+                'Mobilidade Urbana',
+                'Soluções de mobilidade inteligente são o futuro das grandes cidades. ' +
+                'O crescimento populacional exige novas abordagens para o transporte urbano. ' +
+                'A integração de tecnologia no transporte pode melhorar a qualidade de vida nas cidades. ' +
+                'Investir em mobilidade sustentável é essencial para um futuro melhor.',
+                gerarDataAleatoria(),
+                9
+            )
+        ]
+
+        for (const post of postagensIniciais) {
+            await this.incluir(post);
+        }
+
+        console.log('[POVOAMENTO] Postagens iniciais inseridas com sucesso!');
     }
 
 }
