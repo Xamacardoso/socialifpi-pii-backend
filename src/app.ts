@@ -65,6 +65,22 @@ app.post(PATH, async (req: Request, res: Response) => {
     }
 });
 
+// Endpoint para editar uma postagem pelo ID
+app.put(PATH_ID, async (req: Request, res: Response) => {
+    try {
+        const { titulo, conteudo } = req.body;
+        const postagemAtualizada = await repositorio.alterar(req.params.id, titulo, conteudo);
+        
+        if (!postagemAtualizada) {
+            return res.status(404).json({ message: 'Postagem não encontrada' });
+        }
+        res.json(postagemAtualizada);
+
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao editar postagem' });
+    }
+});
+
 // Endpoint para excluir uma postagem pelo ID
 app.delete(PATH_ID, async (req: Request, res: Response) => {
     try {
